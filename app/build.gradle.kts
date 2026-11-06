@@ -26,24 +26,12 @@ android {
   }
 
   signingConfigs {
-    val releaseKeystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-    val releaseKeystoreFile = file(releaseKeystorePath)
-    if (releaseKeystoreFile.exists()) {
-      create("release") {
-        storeFile = releaseKeystoreFile
-        storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
-        keyPassword = System.getenv("KEY_PASSWORD")
-      }
-    }
-    create("debugConfig") {
-      val debugFile = file("${rootDir}/debug.keystore")
-      if (debugFile.exists()) {
-        storeFile = debugFile
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
-      }
+    getByName("debug") {
+      // Shared development key: intentionally public, never use for Play publishing.
+      storeFile = rootProject.file("config/debug.keystore")
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
     }
   }
 
@@ -52,9 +40,7 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfigs.findByName("release")?.let {
-        signingConfig = it
-      }
+      signingConfig = signingConfigs.getByName("debug")
     }
     debug {
     }

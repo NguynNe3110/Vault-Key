@@ -50,7 +50,7 @@
 2. Cho phép trình duyệt hoặc trình quản lý tệp cài APK khi Android yêu cầu, rồi mở tệp đã tải.
 3. Chọn **Dùng trên thiết bị này**, hoặc đăng nhập Google nếu bản build đã cấu hình Firebase.
 
-Mỗi release đính kèm tệp `.apk.sha256` để đối chiếu checksum. Bản debug và release dùng khóa ký khác nhau nên không cài đè được cho nhau. Nếu cần gỡ bản cũ, hãy giữ lại dữ liệu cần thiết trước: gỡ ứng dụng sẽ xóa kho chỉ lưu trên thiết bị.
+Mỗi release đính kèm tệp `.apk.sha256` để đối chiếu checksum. Bản debug và release hiện dùng cùng debug key của repository. APK cũ ký bằng khóa khác sẽ không cài đè được. Nếu cần gỡ bản cũ, hãy giữ lại dữ liệu cần thiết trước: gỡ ứng dụng sẽ xóa kho chỉ lưu trên thiết bị.
 
 ## Chạy và kiểm tra
 
@@ -81,35 +81,30 @@ Không cần Gemini API key để sử dụng các chức năng của kho.
 
 ## Build APK release có chữ ký
 
-Trên Windows, **chỉ khởi tạo khóa khi phát hành ứng dụng mới lần đầu**:
+Cả debug và release dùng **debug key chung** tại [config/debug.keystore](config/debug.keystore). Khóa được lưu trong Git để build trên máy và GitHub Actions luôn có cùng chữ ký; không tạo lại khóa ở mỗi lần chạy. Alias là `androiddebugkey`, mật khẩu keystore và khóa đều là `android`.
+
+Đây là khóa phát triển công khai, phù hợp cho bản thử nghiệm/cài trực tiếp theo lựa chọn của dự án; không dùng để phát hành Google Play hoặc bảo đảm nguồn gốc bản cập nhật.
+
+Trên Windows:
 
 ```powershell
-.\scripts\build-release.ps1 -InitializeSigning -VersionName 1.0.0
+.\scripts\build-release.ps1 -VersionName 1.0.0
 ```
 
-Script tạo khóa RSA riêng và mật khẩu ngẫu nhiên trong `.release-signing/`, build release và xác minh chữ ký bằng `apksigner`. Kết quả:
+Script build release, xác minh chữ ký bằng `apksigner`, rồi xuất:
 
 ```text
 dist/VaultKey-1.0.0.apk
 dist/VaultKey-1.0.0.apk.sha256
 ```
 
-Các lần build sau dùng lại khóa đã có:
+Hoặc build trực tiếp bằng Gradle wrapper:
 
 ```powershell
-.\scripts\build-release.ps1 -VersionName 1.0.1
-adb install -r .\dist\VaultKey-1.0.1.apk
+.\gradlew.bat :app:assembleRelease -PversionName=1.0.0 -PversionCode=1000000
 ```
 
-**Sao lưu an toàn toàn bộ `.release-signing/`**, gồm `vaultkey-release.jks` và `credentials.json`. Thư mục này cùng `dist/` đã bị loại khỏi Git. Không đưa khóa hoặc mật khẩu vào commit hay release asset. Bản cập nhật phải dùng lại khóa của bản đã phát hành; script từ chối ghi đè khóa hiện có.
-
-Nếu đã có khóa riêng, đặt `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` trong môi trường tiến trình rồi build trực tiếp:
-
-```powershell
-.\gradlew.bat :app:assembleRelease -PversionName=1.0.0 -PversionCode=1000000 --no-configuration-cache
-```
-
-APK đã ký nằm tại `app/build/outputs/apk/release/app-release.apk`. Khi chưa cung cấp khóa, Gradle có thể tạo APK **unsigned**; tệp đó chưa dùng làm bản cài đặt phát hành được. Không bắt buộc có `google-services.json` để build và dùng kho trên thiết bị.
+APK gốc nằm tại `app/build/outputs/apk/release/app-release.apk`. Không cần Secrets hay mật khẩu ký riêng. Không bắt buộc có `google-services.json` để build và dùng kho trên thiết bị.
 
 ## Tự động release khi push tag
 
@@ -117,24 +112,11 @@ Workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) chạy
 
 ### Thiết lập một lần
 
-Trong repository GitHub, mở **Settings → Secrets and variables → Actions → New repository secret**:
+**Không cần Secrets ký APK.** Workflow dùng debug key chung trong repository và `GITHUB_TOKEN` tự cấp với quyền `contents: write` để tạo release.
 
-| Secret | Giá trị |
-| --- | --- |
-| `KEYSTORE_BASE64` | Toàn bộ tệp khóa ký, mã hóa Base64 |
-| `STORE_PASSWORD` | Mật khẩu keystore |
-| `KEY_ALIAS` | Alias của khóa; script mặc định tạo `upload` |
-| `KEY_PASSWORD` | Mật khẩu của khóa |
-| `GOOGLE_SERVICES_JSON_BASE64` | Tệp `app/google-services.json` mã hóa Base64; tùy chọn nếu chỉ phát hành kho cục bộ |
+Nếu cần đăng nhập Google/đồng bộ, thêm secret tùy chọn **`GOOGLE_SERVICES_JSON_BASE64`**, chứa tệp `app/google-services.json` mã hóa Base64, tại **Settings → Secrets and variables → Actions**. Không có secret này, APK trên CI chỉ hỗ trợ kho cục bộ. Cấu hình Firebase trên máy không tự được đưa lên GitHub.
 
-Với khóa tạo bằng script ở trên, có thể cấu hình qua [GitHub CLI](https://cli.github.com/) mà không sao chép mật khẩu ra màn hình:
-
-```powershell
-gh auth login
-.\scripts\set-release-secrets.ps1 -Repository NguynNe3110/Vault-Key
-```
-
-Script đưa bốn secret ký APK lên repository; nếu có `app/google-services.json` thì đưa cả cấu hình Firebase lên. Dùng `-Repository owner/repo` của bạn khi làm việc trên fork. Workflow sử dụng `GITHUB_TOKEN` tự cấp với quyền `contents: write`, không cần lưu PAT riêng. Cách tạo release theo [tài liệu GitHub CLI](https://cli.github.com/manual/gh_release_create).
+Cách tạo release theo [tài liệu GitHub CLI](https://cli.github.com/manual/gh_release_create).
 
 ### Phát hành
 
@@ -148,7 +130,7 @@ git push origin v1.0.0
 Workflow sẽ:
 
 1. Checkout đúng commit của tag, cài JDK/SDK và kiểm tra Gradle wrapper.
-2. Khôi phục khóa từ Secrets; thiếu secret ký sẽ dừng và chỉ rõ tên cần bổ sung.
+2. Dùng debug key chung và khôi phục cấu hình Firebase nếu có secret tùy chọn.
 3. Chạy unit/UI test bằng Robolectric, lint release và build APK có chữ ký.
 4. Xác minh chữ ký, đặt tên APK theo tag và tạo checksum SHA-256.
 5. Tạo GitHub Release với ghi chú tự sinh, đính kèm APK và checksum. Chạy lại cho cùng tag sẽ cập nhật hai asset.

@@ -17,6 +17,7 @@
 local.properties
 .env
 *.keystore
+!/config/debug.keystore
 *.jks
 /.release-signing/
 /dist/
