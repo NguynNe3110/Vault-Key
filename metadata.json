@@ -1,0 +1,6 @@
+{
+  "name": "Quản lý Tài khoản",
+  "description": "Quản lý tài khoản bảo mật bằng mức độ bảo mật tùy chỉnh, lưu trữ Firebase và đăng nhập Google.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

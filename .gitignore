@@ -1,0 +1,45 @@
+*.iml
+.gradle
+.kotlin
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.env
+*.keystore
+*.jks
+google-services.json
+**/google-services.json
+!google-services.json.example
+!**/google-services.json.example
+
+# Build logs
+*.log
+
+# Markdown & Documentation
+# Ignore all internal / unnecessary markdown files to avoid clutter and leaking sensitive info
+*.md
+!README.md
+!THIRD_PARTY_NOTICES.md
+
+# Explicit sensitive/internal guides & AI docs
+FIREBASE_SETUP.md
+VALIDATION.md
+AGENTS.md
+README_AI.md
+README_*.md
+design-system/
+*Read Me*.txt
+*README*.txt
+
+
