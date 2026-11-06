@@ -33,7 +33,7 @@ fun LoginScreen(viewModel: LoginViewModel, onLocal: () -> Unit) {
             try { viewModel.onEvent(LoginUiEvent.TokenReceived(GoogleAccountPicker.request(context, state.clientId))) }
             catch(e: GetCredentialCancellationException) { viewModel.onEvent(LoginUiEvent.Cancel) }
             catch(e: NoCredentialException) { viewModel.onEvent(LoginUiEvent.Failed(noAccount = true)) }
-            catch(e: CancellationException) { throw e }
+            catch(e: CancellationException) { viewModel.onEvent(LoginUiEvent.Cancel); throw e }
             catch(e: Exception) { viewModel.onEvent(LoginUiEvent.Failed()) }
         }
     })

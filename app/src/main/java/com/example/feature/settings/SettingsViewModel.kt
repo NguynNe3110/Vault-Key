@@ -19,13 +19,21 @@ class SettingsViewModel(private val vault: VaultRepository, auth: AuthRepository
             status.contains("PERMISSION_DENIED") || status.contains("FAILED_PRECONDITION") || status.contains("Firestore") || status.contains("hết hạn") -> CloudState.Attention
             else -> CloudState.Waiting
         }
-        SettingsUiState(contents = data, categories = categories, user = user, cloud = cloud, googleAvailable = auth.isAvailable.value && auth.webClientId.isNotBlank())
+        SettingsUiState(contents = data, categories = categories, user = user, cloud = cloud,
+            rulePreviews = data.rules.associate { it.id to MaskingEngine.mask("123456", it) },
+            googleAvailable = auth.isAvailable.value && auth.webClientId.isNotBlank())
     }
     val state = combine(base, form) { data, draft -> draft.copy(contents = data.contents, categories = data.categories,
-        user = data.user, cloud = data.cloud, googleAvailable = data.googleAvailable) }
+        user = data.user, cloud = data.cloud, googleAvailable = data.googleAvailable,
+        rulePreviews = data.rulePreviews, draftPreview = preview(draft)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
     private val channel = Channel<SettingsUiEffect>(Channel.BUFFERED)
     val effects = channel.receiveAsFlow()
+    private fun preview(draft: SettingsUiState): String {
+        val rule = draft.editingRule?.copy(name = draft.name.ifBlank { "Mẫu" },
+            pattern = if (draft.lastFour) "" else draft.pattern, keepLast = if (draft.lastFour) 4 else 0) ?: return "—"
+        return if (rule.validate() == null) MaskingEngine.mask(draft.sample, rule) else "—"
+    }
     private fun close() { form.value = SettingsUiState() }
     private fun runWrite(closeAfter: Boolean = false, action: suspend () -> Unit) {
         viewModelScope.launch {

@@ -16,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -53,6 +54,7 @@ class VaultInteractionTest {
         compose.onNodeWithContentDescription("Yêu thích Visa thử nghiệm").performClick()
         await { repository.contents.value.accounts.single().isFavorite }
         compose.onNodeWithText("Visa thử nghiệm").performClick()
+        compose.onNode(isDialog()).captureRoboImage("build/reports/screenshots/detail-card.png")
         compose.onNodeWithText("Chỉnh sửa thông tin").performScrollTo().performClick()
         compose.onNodeWithTag("record_title").performTextReplacement("Visa đã sửa")
         compose.onNodeWithTag("save_record").performClick()
@@ -67,6 +69,7 @@ class VaultInteractionTest {
         await { repository.contents.value.accounts.isEmpty() }
     }
     @Test fun fullAppLargeTextNavigation() {
+        RuntimeEnvironment.setFontScale(2f)
         compose.setContent { MyApplicationTheme(darkTheme = true) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 2f)) { VaultNavHost(factory) }
         } }
@@ -74,6 +77,11 @@ class VaultInteractionTest {
         compose.onNodeWithText("Cài đặt").performClick()
         compose.onNodeWithText("Quy ước mật khẩu").assertExists()
         compose.onRoot().captureRoboImage("build/reports/screenshots/app-large-text-dark.png")
+        compose.onNodeWithTag("settings_list").performScrollToNode(hasText("Che vị trí 1 và 5"))
+        compose.onNodeWithText("Che vị trí 1 và 5").performClick()
+        compose.onNodeWithText("Lưu quy tắc").assertIsDisplayed()
+        compose.onNodeWithText("Số mẫu").performScrollTo().assertIsDisplayed()
+        compose.onNode(isDialog()).captureRoboImage("build/reports/screenshots/rule-dialog-large-dark.png")
     }
     @Test fun invalidFormKeepsInputAndShowsInlineError() {
         openVault()

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -90,7 +91,7 @@ fun SettingsContent(state: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit, 
         item {
             GroupPanel {
                 state.contents.rules.forEachIndexed { index, rule ->
-                    SettingRow(rule.name, MaskingEngine.mask("123456", rule), leading = {
+                    SettingRow(rule.name, state.rulePreviews[rule.id], leading = {
                         Icon(Icons.Outlined.VisibilityOff, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                     }, monospace = true, onClick = { onEvent(SettingsUiEvent.EditRule(rule)) })
                     if (index < state.contents.rules.lastIndex) GroupDivider()
@@ -113,7 +114,7 @@ fun SettingsContent(state: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit, 
             }
         }
         if (state.user != null) item {
-            VaultButton("Đăng xuất", { onEvent(SettingsUiEvent.AskSignOut) }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Logout, tone = ButtonTone.Secondary)
+            VaultButton("Đăng xuất", { onEvent(SettingsUiEvent.AskSignOut) }, Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Logout, tone = ButtonTone.Secondary)
         }
         item { Text("vaultkey  ·  1.0", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
@@ -138,8 +139,6 @@ private fun SettingRow(title: String, subtitle: String?, leading: @Composable ()
 private fun SettingsDialogs(state: SettingsUiState, onEvent: (SettingsUiEvent) -> Unit) {
     val close = { onEvent(SettingsUiEvent.CloseDialog) }
     state.editingRule?.let { rule ->
-        val draft = rule.copy(name = state.name.ifBlank { "Mẫu" }, pattern = if (state.lastFour) "" else state.pattern, keepLast = if (state.lastFour) 4 else 0)
-        val preview = if (draft.validate() == null) MaskingEngine.mask(state.sample, draft) else "—"
         VaultDialog(if (state.contents.rules.any { it.id == rule.id }) "Sửa quy tắc che số" else "Quy tắc che số mới", close,
             footer = { DialogActions(close, { onEvent(SettingsUiEvent.SaveRule) }, "Lưu quy tắc", busy = state.saving) }) {
             VaultField(state.name, { onEvent(SettingsUiEvent.NameChanged(it)) }, "Tên quy tắc", placeholder = "Ví dụ: Thẻ cá nhân")
@@ -149,7 +148,7 @@ private fun SettingsDialogs(state: SettingsUiState, onEvent: (SettingsUiEvent) -
             Surface(shape = VaultStyle.Control, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Xem trước", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text(preview, style = MaterialTheme.typography.titleLarge, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(state.draftPreview, style = MaterialTheme.typography.titleLarge, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
             if (state.error != null) Text(state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)

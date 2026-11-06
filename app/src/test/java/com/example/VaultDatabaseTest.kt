@@ -17,6 +17,28 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [36])
 class VaultDatabaseTest {
+    @Test fun opensExistingVersionTwoDatabaseWithItsOriginalIdentity() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "existing-v2-${System.nanoTime()}"
+        val file = context.getDatabasePath(name)
+        file.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { old ->
+            old.execSQL("CREATE TABLE accounts (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, username TEXT NOT NULL, securityLevelId INTEGER NOT NULL, customFieldsJson TEXT NOT NULL, updatedAt INTEGER NOT NULL, isDeleted INTEGER NOT NULL, kind TEXT NOT NULL DEFAULT 'ACCOUNT', maskedIdentifier TEXT NOT NULL DEFAULT '', maskRuleId TEXT NOT NULL DEFAULT '', isFavorite INTEGER NOT NULL DEFAULT 0)")
+            old.execSQL("CREATE TABLE security_levels (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, formatDescription TEXT NOT NULL)")
+            old.execSQL("CREATE TABLE masking_rules (id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, pattern TEXT NOT NULL, keepLast INTEGER NOT NULL, updatedAt INTEGER NOT NULL, isDeleted INTEGER NOT NULL)")
+            old.execSQL("CREATE TABLE room_master_table (id INTEGER PRIMARY KEY, identity_hash TEXT)")
+            old.execSQL("INSERT INTO room_master_table VALUES (42, 'd627c19d0bf8c139ecbff06648041b24')")
+            old.execSQL("INSERT INTO accounts VALUES ('card-v2', 'My Visa', 'Finance', 'Owner', 1, '{\"Ngân hàng\":\"Example\"}', 10, 0, 'CARD', '*234%6', 'custom', 1)")
+            old.version = 2
+        }
+        val db = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
+        try {
+            val saved = db.accountDao().getAccountById("card-v2")!!.toDomain()
+            assertEquals("*234%6", saved.maskedIdentifier)
+            assertEquals("Example", saved.customFields["Ngân hàng"])
+            assertTrue(saved.isFavorite)
+        } finally { db.close(); context.deleteDatabase(name) }
+    }
     @Test fun upgradesExistingVaultWithoutDeletingAccounts() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val name = "migration-${System.nanoTime()}"

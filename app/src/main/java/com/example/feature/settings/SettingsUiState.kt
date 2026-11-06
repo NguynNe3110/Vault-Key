@@ -9,5 +9,6 @@ data class SettingsUiState(
     val editingRule: MaskingRule? = null, val editingLevel: SecurityLevel? = null, val addingCategory: Boolean = false,
     val deletingRule: MaskingRule? = null, val reducingTo: Int? = null, val showSignOut: Boolean = false,
     val name: String = "", val description: String = "", val pattern: String = "", val lastFour: Boolean = false,
-    val sample: String = "123456", val error: String? = null, val saving: Boolean = false
+    val sample: String = "123456", val error: String? = null, val saving: Boolean = false,
+    val rulePreviews: Map<String, String> = emptyMap(), val draftPreview: String = "—"
 )

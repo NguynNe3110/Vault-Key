@@ -94,7 +94,8 @@ class GreetingScreenshotTest {
         compose.setContent { MyApplicationTheme {
             MainContent(MainUiState(ready = true), 3, false, false, remember { androidx.compose.material3.SnackbarHostState() }, {}) {
                 SettingsContent(SettingsUiState(contents = repo.contents.value, categories = VaultDefaults.categories,
-                    user = UserSession("test", "minhan@gmail.com", "Minh An"), cloud = CloudState.Current), {}, {})
+                    user = UserSession("test", "minhan@gmail.com", "Minh An"), cloud = CloudState.Current,
+                    rulePreviews = mapOf("last-four" to "**3456", "example-positions" to "*234%6")), {}, {})
             }
         } }
         compose.onAllNodesWithText("Tự động đồng bộ", substring = true).assertCountEquals(0)
@@ -105,7 +106,8 @@ class GreetingScreenshotTest {
         compose.setContent { MyApplicationTheme(darkTheme = true) {
             MainContent(MainUiState(ready = true), 3, false, false, remember { androidx.compose.material3.SnackbarHostState() }, {}) {
                 SettingsContent(SettingsUiState(contents = repo.contents.value, categories = VaultDefaults.categories,
-                    user = UserSession("test", "minhan@gmail.com", "Minh An"), cloud = CloudState.Attention), {}, {})
+                    user = UserSession("test", "minhan@gmail.com", "Minh An"), cloud = CloudState.Attention,
+                    rulePreviews = mapOf("last-four" to "**3456", "example-positions" to "*234%6")), {}, {})
             }
         } }
         compose.onNodeWithText("Thử lại").assertIsDisplayed()
